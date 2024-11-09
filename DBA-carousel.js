@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DBA.dk Enhanced Image Carousel
 // @namespace    http://tampermonkey.net/
-// @version      4.0
+// @version      4.9
 // @description  Modern image carousel for DBA.dk with full-size view and navigation
 // @author       Claude
 // @match        https://www.dba.dk/*/id-*
@@ -16,7 +16,7 @@
             display: 'flex',
             overflowX: 'scroll',
             scrollSnapType: 'x mandatory',
-            width: '100%',
+            width: '50vh',
             gap: '10px',
             scrollBehavior: 'smooth',
             borderRadius: '10px',
@@ -25,8 +25,9 @@
             webkitOverflowScrolling: 'touch',
             maxHeight: '50vh',
             padding: '0',
+            zIndex: '9999',
             position: 'relative',
-            transition: 'all 0.3s ease-in-out'
+            transition: 'width 0.5s ease-in-out, max-height 0.5s ease-in-out'
         },
         slide: {
             flex: '0 0 100%',
@@ -44,8 +45,8 @@
             position: 'absolute',
             top: '50%',
             transform: 'translateY(-50%)',
-            zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.8)',
+            zIndex: '10000',
+            background: 'rgba(255, 255, 255, 0.9)',
             border: '1px solid #ddd',
             borderRadius: '50%',
             cursor: 'pointer',
@@ -54,9 +55,9 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '6px',
+            padding: '8px',
             boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-            transition: 'all 0.2s ease-in-out'
+            transition: 'transform 0.3s ease'
         }
     };
 
@@ -65,9 +66,9 @@
         btn.type = 'button';
         btn.setAttribute('aria-label', direction);
         Object.assign(btn.style, styles.button);
-        btn.style[direction === 'previous' ? 'left' : 'right'] = '10px';
+        btn.style[direction === 'previous' ? 'left' : 'right'] = '20px';
 
-        const svg = `<svg viewBox="0 0 100 100" width="18" height="18" style="fill: #333;">
+        const svg = `<svg viewBox="0 0 100 100" width="24" height="24" style="fill: #333;">
             <path d="M 10,50 L 60,100 L 70,90 L 30,50 L 70,10 L 60,0 Z"
                   ${direction === 'next' ? 'transform="translate(100, 100) rotate(180)"' : ''}/>
         </svg>`;
@@ -108,20 +109,23 @@
         });
 
         container.innerHTML = '';
+        container.style.position = 'relative'; // Ensure container is positioned to allow buttons to be positioned absolutely within it
         container.appendChild(wrapper);
 
         const prevBtn = createButton('previous');
         const nextBtn = createButton('next');
 
+        // Append buttons to the container so they stay fixed relative to the carousel itself
+        container.appendChild(prevBtn);
+        container.appendChild(nextBtn);
+
         [prevBtn, nextBtn].forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent toggle when clicking buttons
+            btn.addEventListener('click', () => {
                 wrapper.scrollBy({
                     left: (btn === prevBtn ? -1 : 1) * wrapper.clientWidth,
                     behavior: 'smooth'
                 });
             });
-            container.appendChild(btn);
         });
 
         document.addEventListener('keydown', (e) => {
@@ -133,15 +137,31 @@
             }
         });
 
-        let isExpanded = false;
         wrapper.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            wrapper.style.maxHeight = isExpanded ? '90vh' : '50vh';
-            wrapper.style.transform = isExpanded ? 'scale(1.02)' : 'scale(1)';
-            wrapper.style.boxShadow = isExpanded
-                ? '0 8px 30px rgba(0, 0, 0, 0.15)'
-                : '0 4px 15px rgba(0, 0, 0, 0.1)';
+            if (wrapper.style.maxHeight === '90vh') {
+                wrapper.style.maxHeight = '50vh';
+                wrapper.style.width = '50vh';
+            } else {
+                wrapper.style.maxHeight = '90vh';
+                wrapper.style.width = '77vh';
+            }
+            updateButtonPosition(); // Update button position when toggling wrapper size
         });
+
+        // Update button positioning on wrapper resize
+        const updateButtonPosition = () => {
+            const wrapperRect = wrapper.getBoundingClientRect();
+            prevBtn.style.left = `${wrapperRect.left - prevBtn.clientWidth - 110}px`;
+            nextBtn.style.left = `${wrapperRect.right - 200}px`;
+        };
+
+        // Observe changes in the wrapper size
+        new ResizeObserver(updateButtonPosition).observe(wrapper);
+
+        // Initial position update
+        updateButtonPosition();
+
+        window.addEventListener('resize', updateButtonPosition);
     }
 
     new MutationObserver((mutations, obs) => {
