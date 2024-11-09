@@ -25,7 +25,8 @@
             webkitOverflowScrolling: 'touch',
             maxHeight: '50vh',
             padding: '0',
-            position: 'relative'
+            position: 'relative',
+            transition: 'all 0.3s ease-in-out'
         },
         slide: {
             flex: '0 0 100%',
@@ -44,7 +45,7 @@
             top: '50%',
             transform: 'translateY(-50%)',
             zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'rgba(255, 255, 255, 0.8)',
             border: '1px solid #ddd',
             borderRadius: '50%',
             cursor: 'pointer',
@@ -53,8 +54,9 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+            padding: '6px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            transition: 'all 0.2s ease-in-out'
         }
     };
 
@@ -65,7 +67,7 @@
         Object.assign(btn.style, styles.button);
         btn.style[direction === 'previous' ? 'left' : 'right'] = '10px';
 
-        const svg = `<svg viewBox="0 0 100 100" width="24" height="24" style="fill: #333;">
+        const svg = `<svg viewBox="0 0 100 100" width="18" height="18" style="fill: #333;">
             <path d="M 10,50 L 60,100 L 70,90 L 30,50 L 70,10 L 60,0 Z"
                   ${direction === 'next' ? 'transform="translate(100, 100) rotate(180)"' : ''}/>
         </svg>`;
@@ -112,7 +114,8 @@
         const nextBtn = createButton('next');
 
         [prevBtn, nextBtn].forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent toggle when clicking buttons
                 wrapper.scrollBy({
                     left: (btn === prevBtn ? -1 : 1) * wrapper.clientWidth,
                     behavior: 'smooth'
@@ -130,8 +133,14 @@
             }
         });
 
+        let isExpanded = false;
         wrapper.addEventListener('click', () => {
-            wrapper.style.maxHeight = wrapper.style.maxHeight === '90vh' ? '50vh' : '90vh';
+            isExpanded = !isExpanded;
+            wrapper.style.maxHeight = isExpanded ? '90vh' : '50vh';
+            wrapper.style.transform = isExpanded ? 'scale(1.02)' : 'scale(1)';
+            wrapper.style.boxShadow = isExpanded
+                ? '0 8px 30px rgba(0, 0, 0, 0.15)'
+                : '0 4px 15px rgba(0, 0, 0, 0.1)';
         });
     }
 
