@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DBA.dk Enhanced Image Carousel
 // @namespace    http://tampermonkey.net/
-// @version      4.9
+// @version      5.8
 // @description  Modern image carousel for DBA.dk with full-size view and navigation
 // @author       Claude
 // @match        https://www.dba.dk/*/id-*
@@ -141,18 +141,35 @@
             if (wrapper.style.maxHeight === '90vh') {
                 wrapper.style.maxHeight = '50vh';
                 wrapper.style.width = '50vh';
+                moveBusinessCardDown(false);
             } else {
                 wrapper.style.maxHeight = '90vh';
                 wrapper.style.width = '77vh';
+                moveBusinessCardDown(true);
             }
             updateButtonPosition(); // Update button position when toggling wrapper size
         });
 
+        // Move the business-card below the carousel in expanded mode
+        const moveBusinessCardDown = (moveDown) => {
+            const businessCard = document.querySelector('#business-card');
+            if (businessCard) {
+                businessCard.style.transition = 'margin-top 0.5s ease-in-out';
+                if (moveDown) {
+                    const wrapperHeight = wrapper.getBoundingClientRect().height;
+                    businessCard.style.marginTop = `${wrapperHeight + 300}px`;
+                } else {
+                    businessCard.style.marginTop = '0';
+                }
+            }
+        };
+
         // Update button positioning on wrapper resize
         const updateButtonPosition = () => {
             const wrapperRect = wrapper.getBoundingClientRect();
-            prevBtn.style.left = `${wrapperRect.left - prevBtn.clientWidth - 110}px`;
-            nextBtn.style.left = `${wrapperRect.right - 200}px`;
+            const containerRect = container.getBoundingClientRect();
+            prevBtn.style.left = `${wrapperRect.left - containerRect.left + 10}px`;
+            nextBtn.style.left = `${wrapperRect.right - containerRect.left - nextBtn.clientWidth - 30}px`;
         };
 
         // Observe changes in the wrapper size
